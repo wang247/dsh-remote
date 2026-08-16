@@ -54,7 +54,7 @@ cd android
 .\gradlew.bat assembleDebug   # 产物: app/build/outputs/apk/debug/app-debug.apk
 ```
 
-也可推送到 GitHub 后由 `.github/workflows/build-apk.yml` 自动构建（需 Android 构建环境）。
+GitHub Actions 自动构建示例见本地 `.github/workflows/build-apk.yml`（本仓库未包含：推送 workflow 文件需要 token 具备 `workflow` 权限，如需启用请自行添加并在 PAT 中勾选该权限）。
 
 ## 目录结构
 
