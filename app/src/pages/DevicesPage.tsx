@@ -95,7 +95,7 @@ export default function DevicesPage() {
       <div className="logo-badge">DSH</div>
       <h1 className="page-title">连接电脑</h1>
       <p className="muted">电脑上打开桥接配对页（<b>http://127.0.0.1:17891/</b>）或设置里的「手机遥控」，点「生成配对码」，把那一行字符串复制粘贴到这里。局域网用 <b>IP:端口 配对码</b>；跨网用 <b>relay:ws://中继地址 bridgeId 配对码</b>。</p>
-      <div className="example-box">局域网：192.168.2.85:17891 553011<br />跨网：relay:ws://relay.example.com:8787 3a797dfa 553011</div>
+      <div className="example-box">局域网：192.168.1.100:17891 553011<br />跨网：relay:ws://relay.example.com:8787 3a797dfa 553011</div>
       {error && <div className="error-box">{error}</div>}
       <PairForm host={host} setHost={setHost} port={port} setPort={setPort} token={token} setToken={setToken}
         deviceName={deviceName} setDeviceName={setDeviceName} busy={busy} onSubmit={submit} />
@@ -112,12 +112,12 @@ function PairForm(props: {
     <div className="form">
       <label>配对字符串（从电脑配对页复制）</label>
       <textarea value={props.token} onChange={(e) => props.setToken(e.target.value)} rows={2}
-        placeholder={"192.168.2.85:17891 553011"} style={{ fontSize: 15, fontFamily: "ui-monospace, monospace" }} />
+        placeholder={"192.168.1.100:17891 553011"} style={{ fontSize: 15, fontFamily: "ui-monospace, monospace" }} />
       <label>设备名称</label>
       <input value={props.deviceName} onChange={(e) => props.setDeviceName(e.target.value)} placeholder="我的手机" />
       <label>电脑地址与端口（粘贴完整字符串后自动识别，也可手填）</label>
       <div className="row2">
-        <input value={props.host} onChange={(e) => props.setHost(e.target.value)} placeholder="192.168.2.85" />
+        <input value={props.host} onChange={(e) => props.setHost(e.target.value)} placeholder="192.168.1.100" />
         <input value={props.port} onChange={(e) => props.setPort(e.target.value)} placeholder="17891" inputMode="numeric" />
       </div>
       <div className="row2">
