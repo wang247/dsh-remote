@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DSH 手机遥控 · 配对</title>
+<style>
+  body { font-family: system-ui, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; background:#f7f7f8; color:#1f1f1f; margin:0; padding:24px; }
+  .card { background:#fff; border:1px solid #e5e5e6; border-radius:12px; padding:20px; max-width:560px; margin:0 auto 16px; }
+  h1 { font-size:18px; margin:0 0 4px; } h2 { font-size:15px; margin:0 0 12px; }
+  .sub { color:#6b6b6f; font-size:13px; margin-bottom:16px; line-height:1.6; }
+  .steps { font-size:13px; color:#3f3f46; margin:0 0 16px; padding-left:18px; }
+  .steps li { margin:4px 0; }
+  button { background:#4d6bfe; color:#fff; border:0; border-radius:8px; padding:10px 16px; font-size:14px; cursor:pointer; }
+  button:disabled { opacity:.5; cursor:default; }
+  .code-box { background:#f2f3f5; border:1px solid #e0e0e2; border-radius:10px; padding:14px; margin:14px 0; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:16px; word-break:break-all; user-select:all; cursor:pointer; line-height:1.7; }
+  .code-box b { color:#4d6bfe; }
+  .copy-msg { color:#18794e; font-size:13px; min-height:18px; margin:6px 0; }
+  .expire { color:#b45309; font-size:12px; margin-top:6px; }
+  .row { display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; padding:8px 0; font-size:13px; }
+  .row button { padding:4px 10px; font-size:12px; background:#e5484d; }
+  .badge { display:inline-block; border-radius:99px; padding:2px 8px; font-size:11px; }
+  .on { background:#e6f6ec; color:#18794e; } .off { background:#f2f3f5; color:#6b6b6f; }
+  .muted { color:#6b6b6f; font-size:12px; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>📱 DSH 手机遥控 · 配对</h1>
+  <ol class="steps">
+    <li>点「生成配对码」</li>
+    <li>复制下面的一行配对字符串</li>
+    <li>手机 App 打开「连接电脑」→ 粘贴这一行 → 点「连接」</li>
+  </ol>
+  <button id="gen">生成配对码</button>
+  <div id="pair" style="display:none">
+    <div class="code-box" id="codebox" onclick="copyCode()"></div>
+    <div class="copy-msg" id="copymsg"></div>
+    <div class="expire" id="expire"></div>
+  </div>
+</div>
+<div class="card">
+  <h2>已配对设备</h2>
+  <div id="devices">加载中…</div>
+</div>
+<script>
+var port = __PORT__;
+var current = "";
+function el(id){ return document.getElementById(id); }
+function lanIps(){ try { return JSON.parse(localStorage.getItem("dsh_lan_ips")||"[]"); } catch(e){ return []; } }
+function pickIp(){ var ips = lanIps(); return ips.length > 0 ? ips[0] : "?未知IP?"; }
+function fmtTime(ts){ return new Date(ts).toLocaleString(); }
+function copyCode(){
+  if (!current) return;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(current).then(function(){ el("copymsg").textContent = "✅ 已复制，粘贴到手机 App"; }).catch(function(){ fallbackCopy(); });
+  } else { fallbackCopy(); }
+}
+function fallbackCopy(){
+  var box = el("codebox");
+  var range = document.createRange(); range.selectNodeContents(box);
+  var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range);
+  document.execCommand("copy");
+  el("copymsg").textContent = "✅ 已复制（长按选择后复制），粘贴到手机 App";
+}
+function refreshDevices(){
+  fetch("/devices").then(function(r){ return r.json(); }).then(function(j){
+    var d = el("devices");
+    if (!j.ok || !j.devices || j.devices.length === 0) { d.innerHTML = "（暂无设备）"; return; }
+    d.innerHTML = "";
+    j.devices.forEach(function(dev){
+      var row = document.createElement("div"); row.className = "row";
+      var left = document.createElement("span");
+      left.innerHTML = dev.name + " <span class=\"badge " + (dev.online ? "on" : "off") + "\">" + (dev.online ? "在线" : "离线") + "</span><br><small>" + fmtTime(dev.createdAt) + "</small>";
+      var btn = document.createElement("button"); btn.textContent = "吊销";
+      btn.onclick = function(){ fetch("/revoke", { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify({ deviceId: dev.deviceId }) }).then(function(){ refreshDevices(); }); };
+      row.appendChild(left); row.appendChild(btn); d.appendChild(row);
+    });
+  }).catch(function(){ el("devices").innerHTML = "无法连接桥接服务"; });
+}
+el("gen").onclick = function(){
+  var btn = el("gen"); btn.disabled = true;
+  fetch("/health").then(function(r){ return r.json(); }).then(function(h){
+    localStorage.setItem("dsh_lan_ips", JSON.stringify(h.lanIps || []));
+    return fetch("/pair/new", { method:"POST" }).then(function(r){ return r.json(); });
+  }).then(function(j){
+    if (!j.ok) { alert("生成失败: " + (j.error || "未知错误")); btn.disabled = false; return; }
+    el("pair").style.display = "block";
+    current = pickIp() + ":" + port + " " + j.shortCode;
+    el("codebox").innerHTML = "<b>" + pickIp() + ":" + port + "</b> " + j.shortCode;
+    var mins = Math.max(1, Math.round((j.expiresAt - Date.now()) / 60000));
+    el("expire").textContent = "配对码 " + mins + " 分钟内有效、一次性；生成新码后旧的自动失效。";
+    btn.disabled = false;
+  }).catch(function(e){ alert("生成失败: " + e.message); btn.disabled = false; });
+};
+refreshDevices();
+setInterval(refreshDevices, 5000);
+</script>
+</body>
+</html>

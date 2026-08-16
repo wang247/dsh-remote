@@ -1,0 +1,46 @@
+{
+  "name": "@dsh-mobile/dsh-remote-bridge",
+  "description": "DSH 手机遥控桥接插件：免账号配对 + 局域网 WebSocket/HTTP 透传 DSH API + 方法白名单 + 高危工具审批门控 + 审计。手机 App 通过它查看任务、批准审批、下发指令。",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/types/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./client": {
+      "types": "./lib/types/client/index.d.ts",
+      "default": "./lib/client.js"
+    },
+    "./core": {
+      "default": "./lib/core.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "client": {
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-slots"
+      ],
+      "platform": "web"
+    }
+  },
+  "license": "MIT",
+  "dependencies": {
+    "ws": "^8.21.0"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1",
+    "@deepseek-ai/dsh-host-webserver": "^0.1.0-rc.6",
+    "@deepseek-ai/schemastery": "^3.18.1"
+  },
+  "files": [
+    "lib",
+    "vendor"
+  ],
+  "scripts": {
+    "build:client": "node scripts/build-client.mjs"
+  }
+}
